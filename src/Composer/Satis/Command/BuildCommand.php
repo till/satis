@@ -15,12 +15,15 @@ namespace Composer\Satis\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Command\Command;
 use Composer\Composer;
 use Composer\Package\Dumper\ArrayDumper;
 use Composer\Package\AliasPackage;
 use Composer\Package\LinkConstraint\VersionConstraint;
 use Composer\Package\PackageInterface;
+use Composer\Package\Dumper\ZipDumper;
+use Composer\Package\Dumper\TarDumper;
 use Composer\Json\JsonFile;
 use Composer\Satis\Satis;
 
@@ -37,10 +40,12 @@ class BuildCommand extends Command
             ->setDefinition(array(
                 new InputArgument('file', InputArgument::REQUIRED, 'Json file to use'),
                 new InputArgument('build-dir', InputArgument::REQUIRED, 'Location where to output built files'),
+                new InputArgument('dist-dir', InputArgument::OPTIONAL, 'Location where to dump the archives'),
+                new InputOption('dist', 'd', InputOption::VALUE_NONE, 'Option to dump the archives'),
             ))
             ->setHelp(<<<EOT
-The <info>build</info> command reads the given json file and
-outputs a composer repository in the given build-dir.
+The <info>build</info> command reads the given json file and outputs a composer repository in the given build-dir.
+It also dumps the archives in the given dist-dir (default: build-dir + "/dist/") if the "--dist" option is used.
 EOT
             )
         ;
@@ -76,6 +81,25 @@ EOT
 
         $filename = $input->getArgument('build-dir').'/packages.json';
         $rootPackage = $composer->getPackage();
+
+        $distOption = $input->getOption('dist');
+        if (!empty($distOption)) {
+            if ($distOption == '1') {
+                $distOption = 'zip'; # default value for --dist
+            }
+
+            if (($distOption != 'zip') and ($distOption != 'tar')) {
+                $output->writeln("<error>Don't understand dist option " . htmlspecialchars($distOption) .
+                                 " - try 'zip' or 'tar'</error>");
+
+                return 1;
+            }
+
+            $realDistDir = $input->getArgument('dist-dir');
+            $packages = $this->dumpArchives($packages, $output, $realDistDir, $input->getArgument('build-dir'),
+                                            $config['homepage'], $distOption);
+        }
+
         $this->dumpJson($packages, $output, $filename);
         $this->dumpWeb($packages, $output, $rootPackage, $input->getArgument('build-dir'));
     }
@@ -141,6 +165,73 @@ EOT
         $output->writeln('<info>Writing packages.json</info>');
         $repoJson = new JsonFile($filename);
         $repoJson->write($repo);
+    }
+
+    private function dumpArchives(array $packages, OutputInterface $output, $distDir, $buildDir, $homePage, $fileTypes)
+    {
+        if (empty($distDir)) {
+            $distDir = $buildDir . '/dist'; # default value for dist-dir
+            $webDir = '/dist/';
+        } else {
+            $webDir = '/';
+        }
+
+        if (substr($distDir, 0, 1) == '/') {
+            $absDistDir = $distDir;
+        } else {
+            $absDistDir = getcwd() . '/' . $distDir;
+        }
+
+        foreach ($packages as $packageName => $packageData) {
+            $output->writeln('<info>Considering dumping ' . htmlspecialchars($packageName) . '</info>');
+
+            list($vendorNamespace, $filePackage) = explode('/', $packageName, 2);
+            $filePackageStripVersion = preg_replace('%-.*$%', '', $filePackage);
+            $filePrettyVersion = $packageData->getPrettyVersion();
+            $dumpDir = $absDistDir . '/' . $vendorNamespace . '/' . $filePackageStripVersion;
+            $dumpDirWeb = $webDir . $vendorNamespace . '/' . $filePackageStripVersion;
+              # where to put the dump archives
+
+            if (!file_exists($dumpDir)) {
+                mkdir($dumpDir, 0755, true);
+            }
+
+            $newTagData = $packageData->getSourceReference() . '@@@' .
+                          $packageData->getReleaseDate()->format('Y-m-d H:i:s') . PHP_EOL;
+            $performDump = true;
+            $tagFilePath = $dumpDir . '/' . $filePrettyVersion . '.dist';
+
+            if ($fileTypes == 'tar') {
+                $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $filePrettyVersion . '.tar');
+            } else {
+                $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $filePrettyVersion . '.zip');
+            }
+
+            if (file_exists($tagFilePath)) {
+                $storedTagData = file_get_contents($tagFilePath);
+                if ($storedTagData == $newTagData) {
+                    $performDump = false; # we have the archive already with the right tag
+                } else {
+                    # we have the archive already, but it's the wrong tag so we'll overwrite it
+                }
+            }
+
+            if ($performDump) {
+               $output->writeln('<info>Dumping ' . htmlspecialchars($packageName) . '</info>');
+
+               if ($fileTypes == 'tar') {
+                   $tar = new TarDumper($dumpDir);
+                   $tar->dump($packageData);
+               } else {
+                   $zip = new ZipDumper($dumpDir);
+                   $zip->dump($packageData);
+               }
+
+               file_put_contents($tagFilePath, $newTagData);
+            }
+        }
+
+        return $packages;
     }
 
     private function dumpWeb(array $packages, OutputInterface $output, PackageInterface $rootPackage, $directory)
