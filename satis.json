@@ -1,0 +1,9 @@
+{
+    "name": "lamex",
+    "description": "lamex!",
+    "homepage": "http://lamex.eu/",
+    "repositories": [
+        { "type": "vcs", "url": "git://github.com/Seldaek/monolog.git" }
+    ],
+    "require-all": true
+}
