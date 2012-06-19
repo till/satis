@@ -75,58 +75,11 @@ EOT
 
         $composer = $this->getApplication()->getComposer(true, $config);
         $packages = $this->selectPackages($composer, $output, $verbose, $requireAll);
-
-        // dump packages as .zip archives
-        foreach ($packages as $packk => $packv)
-        {
-            $output->writeln("<info>Dumping $packk</info>");
-
-            if ($packv->getSourceType() != 'git')
-                $output->writeln('<info>Skipping - unknown source type: ' . $packv->getSourceType() . '</info>');
-            else
-            {
-                $dir = basename($packv->getSourceUrl());
-                $dir = preg_replace('%\.git$%', '', $dir);
-
-                if (!file_exists($dir))
-                {
-                    $cmd = 'git clone ' . escapeshellarg($packv->getSourceUrl()) . ' --quiet';
-                    shell_exec($cmd);
-                }
-
-                $newref = $packv->getSourceReference();
-
-                $cmd = 'cd ' . escapeshellarg($dir) . '; git checkout ' . escapeshellarg($newref) . ' --quiet';
-                shell_exec($cmd);
-
-                $dir2 = getcwd() . '/' . $dir;
-                $newpack = new MemoryPackage($packk, 'dump', '');
-                $newpack->setSourceUrl("file://$dir2");
-                $newpack->setSourceReference($newref);
-                $newpack->setSourceType('git');
-                $newname = preg_replace('#[^a-z0-9_-]#', '-', $newpack->getUniqueName());
-
-                $fvend = $fpack = 'unknown';
-                if (preg_match('%^([^/]+)/([^/]+)$%', $packk, $matches))
-                {
-                    $fvend = $matches[1];
-                    $fpack = $matches[2];
-                    $fpack = preg_replace('%-.*?$%', '', $fpack);
-                }
-
-                $newtemp = getcwd() . '/' . $input->getArgument('build-dir') . '/dist/' . $fvend . '/' . $fpack; # where to put the dump archives
-                if (!file_exists($newtemp))
-                    mkdir($newtemp, 0755, true);
-
-                $newzip = new ZipDumper($newtemp);
-                $newzip->dump($newpack);
-            }
-        }
-
         $filename = $input->getArgument('build-dir').'/packages.json';
         $rootPackage = $composer->getPackage();
         $this->dumpJson($packages, $output, $filename);
         $this->dumpWeb($packages, $output, $rootPackage, $input->getArgument('build-dir'));
+        $this->dumpZip($packages, $output, $input->getArgument('build-dir'));
     }
 
     private function selectPackages(Composer $composer, OutputInterface $output, $verbose, $requireAll)
@@ -190,6 +143,27 @@ EOT
         $output->writeln('<info>Writing packages.json</info>');
         $repoJson = new JsonFile($filename);
         $repoJson->write($repo);
+    }
+
+    private function dumpZip(array $packages, OutputInterface $output, $builddir)
+    {
+        foreach ($packages as $packk => $packv)
+        {
+            $output->writeln("<info>Dumping $packk</info>");
+
+            $vend = explode('/', $packk, 2);
+            $fvend = $vend[0];
+            $fpack = $vend[1];
+            $fpack = preg_replace('%-.*?$%', '', $fpack);
+
+            $newtemp = getcwd() . '/' . $builddir . '/dist/' .
+                       $fvend . '/' . $fpack; # where to put the dump archives
+            if (!file_exists($newtemp))
+                mkdir($newtemp, 0755, true);
+
+            $newzip = new ZipDumper($newtemp);
+            $newzip->dump($packv);
+        }
     }
 
     private function dumpWeb(array $packages, OutputInterface $output, PackageInterface $rootPackage, $directory)
