@@ -38,10 +38,12 @@ class BuildCommand extends Command
             ->setDefinition(array(
                 new InputArgument('file', InputArgument::REQUIRED, 'Json file to use'),
                 new InputArgument('build-dir', InputArgument::REQUIRED, 'Location where to output built files'),
+                new InputArgument('dist-dir', InputArgument::OPTIONAL, 'Location where to dump the zip archives'),
             ))
             ->setHelp(<<<EOT
-The <info>build</info> command reads the given json file and
-outputs a composer repository in the given build-dir.
+The <info>build</info> command reads the given json file,
+outputs a composer repository in the given build-dir,
+and dumps the zip archives in the given dist-dir (default: build-dir + "/dist/").
 EOT
             )
         ;
@@ -78,7 +80,13 @@ EOT
         $rootPackage = $composer->getPackage();
         $this->dumpJson($packages, $output, $filename);
         $this->dumpWeb($packages, $output, $rootPackage, $input->getArgument('build-dir'));
-        $this->dumpZip($packages, $output, $input->getArgument('build-dir'));
+
+        $realDistDir = $input->getArgument('dist-dir');
+        if (empty($realDistDir))
+        {
+            $realDistDir = $input->getArgument('build-dir') . '/dist'; # default value for dist-dir
+        }
+        $this->dumpZip($packages, $output, $realDistDir);
     }
 
     private function selectPackages(Composer $composer, OutputInterface $output, $verbose, $requireAll)
@@ -144,28 +152,31 @@ EOT
         $repoJson->write($repo);
     }
 
-    private function dumpZip(array $packages, OutputInterface $output, $builddir)
+    private function dumpZip(array $packages, OutputInterface $output, $distDir)
     {
-        foreach ($packages as $packagekey => $packageval)
+        if (substr($distDir, 0, 1) == '/')
         {
-            $output->writeln('<info>Dumping ' . htmlspecialchars($packagekey) . '</info>');
+            $absDistDir = $distDir;
+        }
+        else
+        {
+            $absDistDir = getcwd() . '/' . $distDir;
+        }
 
-            $vend = explode('/', $packagekey, 2);
-            $fvend = $vend[0];
-            $fpack = $vend[1];
-            $fpack = preg_replace('%-.*?$%', '', $fpack);
+        foreach ($packages as $packageName => $packageData)
+        {
+            $output->writeln('<info>Dumping ' . htmlspecialchars($packageName) . '</info>');
 
-            if (substr($builddir, 0, 1) == '/')
-                $newtemp = $builddir;
-            else
-                $newtemp = getcwd() . '/' . $builddir;
-            $newtemp .= '/dist/' . $fvend . '/' . $fpack; # where to put the dump archives
+            list($vendorNamespace, $filePackage) = explode('/', $packageName, 2);
+            $filePackage = preg_replace('%-.*?$%', '', $filePackage);
 
-            if (!file_exists($newtemp))
-                mkdir($newtemp, 0755, true);
+            $dumpDir = $absDistDir . '/' . $vendorNamespace . '/' . $filePackage; # where to put the dump archives
 
-            $newzip = new ZipDumper($newtemp);
-            $newzip->dump($packageval);
+            if (!file_exists($dumpDir))
+                mkdir($dumpDir, 0755, true);
+
+            $zip = new ZipDumper($dumpDir);
+            $zip->dump($packageData);
         }
     }
 
