@@ -19,7 +19,6 @@ use Symfony\Component\Console\Command\Command;
 use Composer\Composer;
 use Composer\Package\Dumper\ArrayDumper;
 use Composer\Package\AliasPackage;
-use Composer\Package\MemoryPackage;
 use Composer\Package\LinkConstraint\VersionConstraint;
 use Composer\Package\PackageInterface;
 use Composer\Package\Dumper\ZipDumper;
@@ -147,22 +146,26 @@ EOT
 
     private function dumpZip(array $packages, OutputInterface $output, $builddir)
     {
-        foreach ($packages as $packk => $packv)
+        foreach ($packages as $packagekey => $packageval)
         {
-            $output->writeln("<info>Dumping $packk</info>");
+            $output->writeln('<info>Dumping ' . htmlspecialchars($packagekey) . '</info>');
 
-            $vend = explode('/', $packk, 2);
+            $vend = explode('/', $packagekey, 2);
             $fvend = $vend[0];
             $fpack = $vend[1];
             $fpack = preg_replace('%-.*?$%', '', $fpack);
 
-            $newtemp = getcwd() . '/' . $builddir . '/dist/' .
-                       $fvend . '/' . $fpack; # where to put the dump archives
+            if (substr($builddir, 0, 1) == '/')
+                $newtemp = $builddir;
+            else
+                $newtemp = getcwd() . '/' . $builddir;
+            $newtemp .= '/dist/' . $fvend . '/' . $fpack; # where to put the dump archives
+
             if (!file_exists($newtemp))
                 mkdir($newtemp, 0755, true);
 
             $newzip = new ZipDumper($newtemp);
-            $newzip->dump($packv);
+            $newzip->dump($packageval);
         }
     }
 
