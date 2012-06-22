@@ -81,11 +81,8 @@ EOT
         $rootPackage = $composer->getPackage();
 
         $realDistDir = $input->getArgument('dist-dir');
-        if (empty($realDistDir)) {
-            $realDistDir = $input->getArgument('build-dir') . '/dist'; # default value for dist-dir
-        }
-        $packages = $this->dumpZip($packages, $output, $realDistDir, $rootPackage->getHomepage());
-
+        $packages = $this->dumpZip($packages, $output, $realDistDir, $input->getArgument('build-dir'),
+                                   $rootPackage->getHomepage());
         $this->dumpJson($packages, $output, $filename);
         $this->dumpWeb($packages, $output, $rootPackage, $input->getArgument('build-dir'));
     }
@@ -153,8 +150,15 @@ EOT
         $repoJson->write($repo);
     }
 
-    private function dumpZip(array $packages, OutputInterface $output, $distDir, $homePage)
+    private function dumpZip(array $packages, OutputInterface $output, $distDir, $buildDir, $homePage)
     {
+        if (empty($distDir)) {
+            $distDir = $buildDir . '/dist'; # default value for dist-dir
+            $webDir = '/dist/';
+        } else {
+            $webDir = '/';
+        }
+
         if (substr($distDir, 0, 1) == '/') {
             $absDistDir = $distDir;
         } else {
@@ -167,7 +171,7 @@ EOT
             list($vendorNamespace, $filePackage) = explode('/', $packageName, 2);
             $filePackageStripVersion = preg_replace('%-.*$%', '', $filePackage);
             $dumpDir = $absDistDir . '/' . $vendorNamespace . '/' . $filePackageStripVersion;
-            $dumpDirWeb = '/dist/' . $vendorNamespace . '/' . $filePackageStripVersion;
+            $dumpDirWeb = $webDir . $vendorNamespace . '/' . $filePackageStripVersion;
               # where to put the dump archives
 
             if (!file_exists($dumpDir)) {
