@@ -79,14 +79,15 @@ EOT
 
         $filename = $input->getArgument('build-dir').'/packages.json';
         $rootPackage = $composer->getPackage();
-        $this->dumpJson($packages, $output, $filename);
-        $this->dumpWeb($packages, $output, $rootPackage, $input->getArgument('build-dir'));
 
         $realDistDir = $input->getArgument('dist-dir');
         if (empty($realDistDir)) {
             $realDistDir = $input->getArgument('build-dir') . '/dist'; # default value for dist-dir
         }
-        $this->dumpZip($packages, $output, $realDistDir);
+        $packages = $this->dumpZip($packages, $output, $realDistDir, $rootPackage->getHomepage());
+
+        $this->dumpJson($packages, $output, $filename);
+        $this->dumpWeb($packages, $output, $rootPackage, $input->getArgument('build-dir'));
     }
 
     private function selectPackages(Composer $composer, OutputInterface $output, $verbose, $requireAll)
@@ -152,7 +153,7 @@ EOT
         $repoJson->write($repo);
     }
 
-    private function dumpZip(array $packages, OutputInterface $output, $distDir)
+    private function dumpZip(array $packages, OutputInterface $output, $distDir, $homePage)
     {
         if (substr($distDir, 0, 1) == '/') {
             $absDistDir = $distDir;
@@ -166,6 +167,7 @@ EOT
             list($vendorNamespace, $filePackage) = explode('/', $packageName, 2);
             $filePackageStripVersion = preg_replace('%-.*$%', '', $filePackage);
             $dumpDir = $absDistDir . '/' . $vendorNamespace . '/' . $filePackageStripVersion;
+            $dumpDirWeb = '/dist/' . $vendorNamespace . '/' . $filePackageStripVersion;
               # where to put the dump archives
 
             if (!file_exists($dumpDir)) {
@@ -176,6 +178,7 @@ EOT
                           $packageData->getReleaseDate()->format('Y-m-d H:i:s') . PHP_EOL;
             $performDump = true;
             $tagFilePath = $dumpDir . '/' . $filePackage . '.dist';
+            $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $filePackage . '.zip');
 
             if (file_exists($tagFilePath)) {
                 $storedTagData = file_get_contents($tagFilePath);
@@ -193,6 +196,8 @@ EOT
                file_put_contents($tagFilePath, $newTagData);
             }
         }
+
+        return $packages;
     }
 
     private function dumpWeb(array $packages, OutputInterface $output, PackageInterface $rootPackage, $directory)
