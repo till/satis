@@ -161,19 +161,35 @@ EOT
         }
 
         foreach ($packages as $packageName => $packageData) {
-            $output->writeln('<info>Dumping ' . htmlspecialchars($packageName) . '</info>');
+            $output->writeln('<info>Considering dumping ' . htmlspecialchars($packageName) . '</info>');
 
             list($vendorNamespace, $filePackage) = explode('/', $packageName, 2);
-            $filePackage = preg_replace('%-.*?$%', '', $filePackage);
-
-            $dumpDir = $absDistDir . '/' . $vendorNamespace . '/' . $filePackage; # where to put the dump archives
+            $filePackageStripVersion = preg_replace('%-.*$%', '', $filePackage);
+            $dumpDir = $absDistDir . '/' . $vendorNamespace . '/' . $filePackageStripVersion; # where to put the dump archives
 
             if (!file_exists($dumpDir)) {
                 mkdir($dumpDir, 0755, true);
             }
 
-            $zip = new ZipDumper($dumpDir);
-            $zip->dump($packageData);
+            $newTagData = $packageData->getSourceReference() . '@@@' . $packageData->getReleaseDate()->format('Y-m-d H:i:s') . "\n";
+            $performDump = true;
+            $tagFilePath = $dumpDir . '/' . $filePackage . '.dist';
+
+            if (file_exists($tagFilePath)) {
+                $storedTagData = file_get_contents($tagFilePath);
+                if ($storedTagData == $newTagData) {
+                    $performDump = false; # we have the zip archive already with the right tag
+                } else {
+                    # we have the zip archive already, but it's the wrong tag so we'll overwrite it
+                }
+            }
+
+            if ($performDump) {
+               $output->writeln('<info>Dumping ' . htmlspecialchars($packageName) . '</info>');
+               $zip = new ZipDumper($dumpDir);
+               $zip->dump($packageData);
+               file_put_contents($tagFilePath, $newTagData);
+            }
         }
     }
 
