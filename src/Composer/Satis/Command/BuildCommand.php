@@ -165,13 +165,15 @@ EOT
 
             list($vendorNamespace, $filePackage) = explode('/', $packageName, 2);
             $filePackageStripVersion = preg_replace('%-.*$%', '', $filePackage);
-            $dumpDir = $absDistDir . '/' . $vendorNamespace . '/' . $filePackageStripVersion; # where to put the dump archives
+            $dumpDir = $absDistDir . '/' . $vendorNamespace . '/' . $filePackageStripVersion;
+              # where to put the dump archives
 
             if (!file_exists($dumpDir)) {
                 mkdir($dumpDir, 0755, true);
             }
 
-            $newTagData = $packageData->getSourceReference() . '@@@' . $packageData->getReleaseDate()->format('Y-m-d H:i:s') . "\n";
+            $newTagData = $packageData->getSourceReference() . '@@@' .
+                          $packageData->getReleaseDate()->format('Y-m-d H:i:s') . "\n";
             $performDump = true;
             $tagFilePath = $dumpDir . '/' . $filePackage . '.dist';
 
