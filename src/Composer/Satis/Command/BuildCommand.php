@@ -173,7 +173,7 @@ EOT
             }
 
             $newTagData = $packageData->getSourceReference() . '@@@' .
-                          $packageData->getReleaseDate()->format('Y-m-d H:i:s') . "\n";
+                          $packageData->getReleaseDate()->format('Y-m-d H:i:s') . PHP_EOL;
             $performDump = true;
             $tagFilePath = $dumpDir . '/' . $filePackage . '.dist';
 
