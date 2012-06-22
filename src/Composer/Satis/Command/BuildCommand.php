@@ -170,6 +170,7 @@ EOT
 
             list($vendorNamespace, $filePackage) = explode('/', $packageName, 2);
             $filePackageStripVersion = preg_replace('%-.*$%', '', $filePackage);
+            $filePackageNoDots = preg_replace('%\.%', '-', $filePackage);
             $dumpDir = $absDistDir . '/' . $vendorNamespace . '/' . $filePackageStripVersion;
             $dumpDirWeb = $webDir . $vendorNamespace . '/' . $filePackageStripVersion;
               # where to put the dump archives
@@ -181,9 +182,9 @@ EOT
             $newTagData = $packageData->getSourceReference() . '@@@' .
                           $packageData->getReleaseDate()->format('Y-m-d H:i:s') . PHP_EOL;
             $performDump = true;
-            $tagFilePath = $dumpDir . '/' . $vendorNamespace . '-' . $filePackage . '.dist';
+            $tagFilePath = $dumpDir . '/' . $vendorNamespace . '-' . $filePackageNoDots . '.dist';
             $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $vendorNamespace . '-' .
-                                     $filePackage . '.zip');
+                                     $filePackageNoDots . '.zip');
 
             if (file_exists($tagFilePath)) {
                 $storedTagData = file_get_contents($tagFilePath);
