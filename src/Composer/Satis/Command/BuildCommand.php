@@ -182,7 +182,7 @@ EOT
                           $packageData->getReleaseDate()->format('Y-m-d H:i:s') . PHP_EOL;
             $performDump = true;
             $tagFilePath = $dumpDir . '/' . $filePackage . '.dist';
-            $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $filePackage . '.zip');
+            $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $packageName . '.zip');
 
             if (file_exists($tagFilePath)) {
                 $storedTagData = file_get_contents($tagFilePath);
