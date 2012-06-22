@@ -76,14 +76,15 @@ EOT
 
         $composer = $this->getApplication()->getComposer(true, $config);
         $packages = $this->selectPackages($composer, $output, $verbose, $requireAll);
+        print_r($packages); exit;
+
         $filename = $input->getArgument('build-dir').'/packages.json';
         $rootPackage = $composer->getPackage();
         $this->dumpJson($packages, $output, $filename);
         $this->dumpWeb($packages, $output, $rootPackage, $input->getArgument('build-dir'));
 
         $realDistDir = $input->getArgument('dist-dir');
-        if (empty($realDistDir))
-        {
+        if (empty($realDistDir)) {
             $realDistDir = $input->getArgument('build-dir') . '/dist'; # default value for dist-dir
         }
         $this->dumpZip($packages, $output, $realDistDir);
@@ -154,17 +155,14 @@ EOT
 
     private function dumpZip(array $packages, OutputInterface $output, $distDir)
     {
-        if (substr($distDir, 0, 1) == '/')
-        {
+        if (substr($distDir, 0, 1) == '/') {
             $absDistDir = $distDir;
         }
-        else
-        {
+        else {
             $absDistDir = getcwd() . '/' . $distDir;
         }
 
-        foreach ($packages as $packageName => $packageData)
-        {
+        foreach ($packages as $packageName => $packageData) {
             $output->writeln('<info>Dumping ' . htmlspecialchars($packageName) . '</info>');
 
             list($vendorNamespace, $filePackage) = explode('/', $packageName, 2);
@@ -172,8 +170,9 @@ EOT
 
             $dumpDir = $absDistDir . '/' . $vendorNamespace . '/' . $filePackage; # where to put the dump archives
 
-            if (!file_exists($dumpDir))
+            if (!file_exists($dumpDir)) {
                 mkdir($dumpDir, 0755, true);
+            }
 
             $zip = new ZipDumper($dumpDir);
             $zip->dump($packageData);
