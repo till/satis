@@ -181,8 +181,9 @@ EOT
             $newTagData = $packageData->getSourceReference() . '@@@' .
                           $packageData->getReleaseDate()->format('Y-m-d H:i:s') . PHP_EOL;
             $performDump = true;
-            $tagFilePath = $dumpDir . '/' . $packageName . '.dist';
-            $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $packageName . '.zip');
+            $tagFilePath = $dumpDir . '/' . $vendorNamespace . '-' . $filePackage . '.dist';
+            $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $vendorNamespace . '-' .
+                                     $filePackage . '.zip');
 
             if (file_exists($tagFilePath)) {
                 $storedTagData = file_get_contents($tagFilePath);
