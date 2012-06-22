@@ -76,7 +76,6 @@ EOT
 
         $composer = $this->getApplication()->getComposer(true, $config);
         $packages = $this->selectPackages($composer, $output, $verbose, $requireAll);
-        print_r($packages); exit;
 
         $filename = $input->getArgument('build-dir').'/packages.json';
         $rootPackage = $composer->getPackage();
@@ -157,8 +156,7 @@ EOT
     {
         if (substr($distDir, 0, 1) == '/') {
             $absDistDir = $distDir;
-        }
-        else {
+        } else {
             $absDistDir = getcwd() . '/' . $distDir;
         }
 
