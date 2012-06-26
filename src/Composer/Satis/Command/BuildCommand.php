@@ -204,7 +204,7 @@ EOT
                 $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $filePrettyVersion . '.tar');
             } else {
                 $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $filePrettyVersion . '.zip');
-            } # if it's "zip,tar" we'll setDistUrl() to the ".zip" archive
+            } # if $fileTypes is "zip,tar" we'll setDistUrl() to the ".zip" archive because we can only set one URL
 
             if (file_exists($tagFilePath)) {
                 $storedTagData = file_get_contents($tagFilePath);
