@@ -82,7 +82,7 @@ EOT
 
         $realDistDir = $input->getArgument('dist-dir');
         $packages = $this->dumpZip($packages, $output, $realDistDir, $input->getArgument('build-dir'),
-                                   $rootPackage->getHomepage());
+                                   $config['homepage']);
         $this->dumpJson($packages, $output, $filename);
         $this->dumpWeb($packages, $output, $rootPackage, $input->getArgument('build-dir'));
     }

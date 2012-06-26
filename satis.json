@@ -1,9 +1,0 @@
-{
-    "name": "ulf tests something",
-    "description": "ulf tests something!",
-    "homepage": "http://kulturvansterpretto.com",
-    "repositories": [
-        { "type": "vcs", "url": "git://github.com/Seldaek/monolog.git" }
-    ],
-    "require-all": true
-}
