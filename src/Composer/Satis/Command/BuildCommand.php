@@ -41,7 +41,7 @@ class BuildCommand extends Command
                 new InputArgument('file', InputArgument::REQUIRED, 'Json file to use'),
                 new InputArgument('build-dir', InputArgument::REQUIRED, 'Location where to output built files'),
                 new InputArgument('dist-dir', InputArgument::OPTIONAL, 'Location where to dump the archives'),
-                new InputOption('dist', 'd', InputOption::VALUE_REQUIRED, 'Option to dump the archives'),
+                new InputOption('dist', 'd', InputOption::VALUE_NONE, 'Option to dump the archives'),
             ))
             ->setHelp(<<<EOT
 The <info>build</info> command reads the given json file and outputs a composer repository in the given build-dir.
@@ -83,7 +83,11 @@ EOT
         $rootPackage = $composer->getPackage();
 
         $distOption = $input->getOption('dist');
-        if (isset($distOption)) {
+        if (!empty($distOption)) {
+            if ($distOption == '1') {
+                $distOption = 'zip'; # default value for --dist
+            }
+
             if ($distOption == 'tar,zip') {
                 $distOption = 'zip,tar';
             }
@@ -204,7 +208,7 @@ EOT
                 $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $filePrettyVersion . '.tar');
             } else {
                 $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $filePrettyVersion . '.zip');
-            } # if $fileTypes is "zip,tar" we'll setDistUrl() to the ".zip" archive because we can only set one URL
+            } # @todo if $fileTypes is "zip,tar" we'll setDistUrl() to the ".zip" archive because we can only set one URL
 
             if (file_exists($tagFilePath)) {
                 $storedTagData = file_get_contents($tagFilePath);
