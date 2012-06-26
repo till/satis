@@ -88,11 +88,7 @@ EOT
                 $distOption = 'zip'; # default value for --dist
             }
 
-            if ($distOption == 'tar,zip') {
-                $distOption = 'zip,tar';
-            }
-
-            if (($distOption != 'zip') and ($distOption != 'tar') and ($distOption != 'zip,tar')) {
+            if (($distOption != 'zip') and ($distOption != 'tar')) {
                 $output->writeln("<error>Don't understand dist option " . htmlspecialchars($distOption) .
                                  " - try 'zip' or 'tar'</error>");
 
@@ -204,11 +200,12 @@ EOT
                           $packageData->getReleaseDate()->format('Y-m-d H:i:s') . PHP_EOL;
             $performDump = true;
             $tagFilePath = $dumpDir . '/' . $filePrettyVersion . '.dist';
+
             if ($fileTypes == 'tar') {
                 $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $filePrettyVersion . '.tar');
             } else {
                 $packageData->setDistUrl($homePage . $dumpDirWeb . '/' . $filePrettyVersion . '.zip');
-            } # @todo if $fileTypes is "zip,tar" we'll setDistUrl() to the ".zip" archive because we can only set one URL
+            }
 
             if (file_exists($tagFilePath)) {
                 $storedTagData = file_get_contents($tagFilePath);
@@ -222,14 +219,12 @@ EOT
             if ($performDump) {
                $output->writeln('<info>Dumping ' . htmlspecialchars($packageName) . '</info>');
 
-               if (($fileTypes == 'zip') or ($fileTypes == 'zip,tar')) {
-                   $zip = new ZipDumper($dumpDir);
-                   $zip->dump($packageData);
-               }
-
-               if (($fileTypes == 'tar') or ($fileTypes == 'zip,tar')) {
+               if ($fileTypes == 'tar') {
                    $tar = new TarDumper($dumpDir);
                    $tar->dump($packageData);
+               } else {
+                   $zip = new ZipDumper($dumpDir);
+                   $zip->dump($packageData);
                }
 
                file_put_contents($tagFilePath, $newTagData);
