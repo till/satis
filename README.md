@@ -13,6 +13,7 @@ Usage
 - Download Composer: `wget http://getcomposer.org/composer.phar`
 - Install dependencies: `php composer.phar install`
 - Build a repository: `php bin/satis build <composer.json> <build-dir>`
+- Build a repository and dump archives: `php bin/satis build <composer.json> <build-dir> [<dist-dir>] --dist={zip,tar}`
 
 Read the more detailed instructions in the 
 [documentation](http://getcomposer.org/doc/articles/handling-private-packages-with-satis.md).
@@ -43,3 +44,5 @@ License
 -------
 
 Satis is licensed under the MIT License - see the LICENSE file for details
+
+(Note: This version requires our modded Composer as well.)
